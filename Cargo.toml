@@ -1,0 +1,61 @@
+[package]
+name = "sbchild-top-wasm"
+version = "0.1.0"
+authors = ["sbchild <sbchild0@gmail.com>"]
+edition = "2024"
+license = "MIT"
+description = "sbchild.top WASM 组件"
+repository = "https://github.com/sb-child/sbchild-top-wasm"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook", "wee_alloc"]
+
+[dependencies]
+wasm-bindgen = "0.2.129"
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+cfg-if = "1.0.5"
+wee_alloc = { version = "0.4.5", optional = true }
+wasm-bindgen-futures = "0.4.79"
+flexstr = { version = "0.11.7", features = ["serde", "bytes"] }
+reqwest = { version = "0.11", default-features = false, features = [
+    "json",
+    "multipart",
+] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4.45", features = [
+    "now",
+    "serde",
+    "wasm-bindgen",
+    "wasmbind",
+], default-features = false }
+chrono-tz = { version = "0.10.4", features = ["serde"] }
+snafu = { version = "0.9.2", features = ["futures"] }
+# photon-rs 不能开 wee_alloc feature，因为已经在 lib.rs 设置过了
+# photon-rs 的 patch-remove-wasm-bindgen 分支移除了所有 wasm_bindgen macros
+photon-rs = { git = "https://github.com/sb-child/photon.git", rev = "6904cc0576e1eb834da14159631cd42eba262588", default-features = false, features = [
+    "enable_wasm",
+] }
+futures = "0.3.34"
+web-sys = { version = "0.3.106", features = [
+    "CanvasRenderingContext2d",
+    "HtmlCanvasElement",
+    "ImageData",
+] }
+serde-wasm-bindgen = "0.6.5"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.79"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
