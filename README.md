@@ -16,10 +16,10 @@
 
 ### 构建
 
-Scope 必须是 `sb-child`，来确保发布到正确的 Registry。
+Scope 必须是 `sb-child`，来确保发布到正确的 Registry。Target 必须是 `web`。
 
 ```
-wasm-pack build --scope sb-child
+wasm-pack build --scope sb-child --target web
 ```
 
 ### 测试(现在没有写)
