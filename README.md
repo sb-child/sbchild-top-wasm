@@ -7,7 +7,7 @@
 
 ## 介绍
 
-本项目用于 <https://sbchild.top/> 网站([GitHub Repo](https://github.com/sb-child/sbchild.top))。
+本项目用于 <https://sbchild.top/> 网站([GitHub Repo](https://github.com/sb-child/sbchild.top))，内置这些模块：
 
 - `src/lightbox`: 图床API，用于灯箱组件的 Worker 后端
 - `src/lightbox_image`: 图像处理函数，用于前端灯箱组件
@@ -42,6 +42,10 @@ Token 必须用 Classic 类型，需要启用 `read:packages`,`write:packages` S
 然后执行 `wasm-pack publish`。
 
 ### 安装到你的项目
+
+先做好上一步的 `.npmrc` 添加那两行，然后 `npm install @sb-child/sbchild-top-wasm`。
+
+<https://github.com/users/sb-child/packages/npm/package/sbchild-top-wasm>
 
 ## License
 

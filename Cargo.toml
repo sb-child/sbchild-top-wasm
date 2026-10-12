@@ -1,6 +1,6 @@
 [package]
 name = "sbchild-top-wasm"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["sbchild <sbchild0@gmail.com>"]
 edition = "2024"
 license = "MIT"
