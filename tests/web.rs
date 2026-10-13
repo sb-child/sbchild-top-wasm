@@ -150,13 +150,8 @@ async fn too_small_image_returns_error() {
     );
 }
 
-/// 无效数据：期望解码 panic 被 catch_unwind 捕获。
-///
-/// 注意：wasm32-unknown-unknown 上 unwinding 不受支持，`panic="unwind"` 也不生效，
-/// `catch_unwind` 无法拦截 panic，会直接 trap 掉整个测试实例，故默认忽略。
-/// 这也意味着生产构建里无效图像不会返回“图像解析失败”，而是直接 trap。
+/// 无效数据：解码返回 Err，而不是 panic/trap。
 #[wasm_bindgen_test]
-#[ignore = "wasm32 上 catch_unwind 无法捕获 panic，会 trap 整个测试实例"]
 async fn invalid_image_returns_error() {
     let err = run(vec![0u8; 128], |s| s.confirm())
         .await

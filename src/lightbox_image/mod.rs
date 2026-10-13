@@ -2,16 +2,40 @@ pub mod settings;
 
 use crate::lightbox_image::settings::CropSettings;
 use photon_rs::{PhotonImage, transform};
-use std::panic;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
+use std::io::Cursor;
+use wasm_bindgen::Clamped;
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
+
+/// 解码时允许的最大边长，用于挡住解压炸弹。
+const MAX_IMAGE_DIM: u32 = 16384;
+/// 解码时允许的最大分配字节数。
+const MAX_ALLOC_BYTES: u64 = 512 * 1024 * 1024;
 
 pub fn open_image(data: Vec<u8>) -> Result<PhotonImage, String> {
-    let img = panic::catch_unwind(|| PhotonImage::new_from_byteslice(data))
-        .map_err(|e| format!("{e:?}"))?;
-    if img.get_width() < 16 || img.get_height() < 16 {
-        return Err("尺寸太小。".to_string());
+    // 用 Reader + Limits 显式限制尺寸与内存，而不是 photon 内部会 unwrap 的
+    // `new_from_byteslice`。这里全程返回 Result，不会 panic。
+    let mut limits = image::io::Limits::default();
+    limits.max_image_width = Some(MAX_IMAGE_DIM);
+    limits.max_image_height = Some(MAX_IMAGE_DIM);
+    limits.max_alloc = Some(MAX_ALLOC_BYTES);
+
+    let mut reader = image::io::Reader::new(Cursor::new(&data[..]));
+    reader.limits(limits);
+
+    let img = reader
+        .with_guessed_format()
+        .map_err(|e| format!("读取失败: {}", e))?
+        .decode()
+        .map_err(|e| format!("解码失败: {}", e))?;
+
+    let width = img.width();
+    let height = img.height();
+    if width < 16 || height < 16 {
+        return Err("尺寸太小: 要求宽度和高度至少 16 像素。".to_string());
     }
-    Ok(img)
+
+    let rgba = img.into_rgba8();
+    Ok(PhotonImage::new(rgba.into_raw(), width, height))
 }
 
 pub fn crop_image(img: &PhotonImage, sett: &CropSettings) -> PhotonImage {
@@ -72,9 +96,30 @@ pub fn preview_image(
     canvas: HtmlCanvasElement,
     ctx: CanvasRenderingContext2d,
 ) -> Result<(), String> {
-    panic::catch_unwind(|| photon_rs::putImageData(canvas, ctx, img)).map_err(|e| format!("{e:?}"))
+    // 直接用 web-sys 构建 ImageData（返回 Result），避免 photon `putImageData`
+    // 内部对 `ImageData::new_..` 的 unwrap/expect。
+    let width = img.get_width();
+    let height = img.get_height();
+    let mut pixels = img.get_raw_pixels();
+    let data = ImageData::new_with_u8_clamped_array_and_sh(Clamped(&mut pixels), width, height)
+        .map_err(|e| format!("ImageData 创建失败: {e:?}"))?;
+
+    canvas.set_width(width);
+    canvas.set_height(height);
+    ctx.put_image_data(&data, 0.0, 0.0)
+        .map_err(|e| format!("putImageData() 失败: {e:?}"))
 }
 
 pub fn final_image(img: &PhotonImage) -> Result<Vec<u8>, String> {
-    panic::catch_unwind(|| img.get_bytes_webp()).map_err(|e| format!("{e:?}"))
+    // 用 image crate 的 write_to（返回 Result）替换 photon `get_bytes_webp` 的 unwrap。
+    let width = img.get_width();
+    let height = img.get_height();
+    let buffer = image::RgbaImage::from_raw(width, height, img.get_raw_pixels())
+        .ok_or_else(|| "像素数据与尺寸不匹配".to_string())?;
+
+    let mut out = Vec::new();
+    image::DynamicImage::ImageRgba8(buffer)
+        .write_to(&mut Cursor::new(&mut out), image::ImageOutputFormat::WebP)
+        .map_err(|e| format!("写出 WebP 失败: {}", e))?;
+    Ok(out)
 }

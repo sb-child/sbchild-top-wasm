@@ -22,10 +22,12 @@ Scope 必须是 `sb-child`，来确保发布到正确的 Registry。Target 必�
 wasm-pack build --scope sb-child --target web
 ```
 
-### 测试(现在没有写)
+### 测试
+
+必须加 `--release`，因为 Debug profile 性能太差跑不动测试。
 
 ```
-wasm-pack test --headless --firefox
+wasm-pack test --headless --firefox --release
 ```
 
 ### 发布到 GitHub NPM Registry
