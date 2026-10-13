@@ -1,12 +1,17 @@
 pub mod settings;
 
 use crate::lightbox_image::settings::CropSettings;
-use photon_rs::{transform, PhotonImage};
+use photon_rs::{PhotonImage, transform};
 use std::panic;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 pub fn open_image(data: Vec<u8>) -> Result<PhotonImage, String> {
-    panic::catch_unwind(|| PhotonImage::new_from_byteslice(data)).map_err(|e| format!("{e:?}"))
+    let img = panic::catch_unwind(|| PhotonImage::new_from_byteslice(data))
+        .map_err(|e| format!("{e:?}"))?;
+    if img.get_width() < 16 || img.get_height() < 16 {
+        return Err("尺寸太小。".to_string());
+    }
+    Ok(img)
 }
 
 pub fn crop_image(img: &PhotonImage, sett: &CropSettings) -> PhotonImage {
@@ -45,10 +50,13 @@ pub fn crop_image(img: &PhotonImage, sett: &CropSettings) -> PhotonImage {
     let x2 = x1 + crop_w;
     let y2 = y1 + crop_h;
 
-    let x1_u32 = (x1.round() as u32).min(img.get_width());
-    let y1_u32 = (y1.round() as u32).min(img.get_height());
-    let x2_u32 = (x2.round() as u32).min(img.get_width()).max(x1_u32 + 1);
-    let y2_u32 = (y2.round() as u32).min(img.get_height()).max(y1_u32 + 1);
+    let w = img.get_width();
+    let h = img.get_height();
+
+    let x1_u32 = (x1.round() as u32).min(w.saturating_sub(1));
+    let y1_u32 = (y1.round() as u32).min(h.saturating_sub(1));
+    let x2_u32 = (x2.round() as u32).clamp(x1_u32 + 1, w);
+    let y2_u32 = (y2.round() as u32).clamp(y1_u32 + 1, h);
 
     let cropped_img = transform::crop(img, x1_u32, y1_u32, x2_u32, y2_u32);
     transform::resize(

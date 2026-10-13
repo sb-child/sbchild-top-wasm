@@ -8,22 +8,15 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::utils::set_panic_hook;
 
-cfg_select! {
-    feature = "wee_alloc" => {
-        #[global_allocator]
-        static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-    }
-}
+// --- talc global_allocator
 
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
+#[cfg(target_arch = "wasm32")]
+use talc::{sync::TalcLock, wasm::*};
 
-#[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, sbchild-top-wasm!");
-}
+#[cfg(target_arch = "wasm32")]
+#[global_allocator]
+static TALC: TalcLock<spinning_top::RawSpinlock, WasmGrowAndClaim, WasmBinning> =
+    TalcLock::new(WasmGrowAndClaim);
 
 // --- lightbox worker funcs
 
@@ -120,5 +113,11 @@ impl LightboxEditorSession {
     pub fn cancel(&self) {
         use lightbox_image::settings::EditorCommand;
         let _ = self.tx.unbounded_send(EditorCommand::Cancel);
+    }
+}
+
+impl Default for LightboxEditorSession {
+    fn default() -> Self {
+        Self::new()
     }
 }

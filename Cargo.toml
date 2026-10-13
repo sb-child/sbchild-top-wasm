@@ -11,7 +11,11 @@ repository = "https://github.com/sb-child/sbchild-top-wasm"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["console_error_panic_hook", "wee_alloc"]
+default = []
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+talc = { version = "5.1.1" }
+spinning_top = { version = "0.3.0" }
 
 [dependencies]
 wasm-bindgen = "0.2.129"
@@ -22,8 +26,6 @@ wasm-bindgen = "0.2.129"
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
-cfg-if = "1.0.5"
-wee_alloc = { version = "0.4.5", optional = true }
 wasm-bindgen-futures = "0.4.79"
 flexstr = { version = "0.11.7", features = ["serde", "bytes"] }
 reqwest = { version = "0.11", default-features = false, features = [
@@ -40,7 +42,6 @@ chrono = { version = "0.4.45", features = [
 ], default-features = false }
 chrono-tz = { version = "0.10.4", features = ["serde"] }
 snafu = { version = "0.9.2", features = ["futures"] }
-# photon-rs 不能开 wee_alloc feature，因为已经在 lib.rs 设置过了
 # photon-rs 的 patch-remove-wasm-bindgen 分支移除了所有 wasm_bindgen macros
 photon-rs = { git = "https://github.com/sb-child/photon.git", rev = "6904cc0576e1eb834da14159631cd42eba262588", default-features = false, features = [
     "enable_wasm",
@@ -55,7 +56,10 @@ serde-wasm-bindgen = "0.6.5"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.79"
+web-sys = { version = "0.3.106", features = ["Document", "Element", "Window"] }
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+lto = "thin"
+codegen-units = 1

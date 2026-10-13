@@ -42,10 +42,9 @@ pub enum KeepDuration {
     Permanent,
 }
 
-impl Into<HeaderValue> for KeepDuration {
-    fn into(self) -> HeaderValue {
-        let r = HeaderValue::from_str(&self.to_string()).expect("Invalid KeepDuration header.");
-        r
+impl From<KeepDuration> for HeaderValue {
+    fn from(val: KeepDuration) -> Self {
+        HeaderValue::from_str(&val.to_string()).expect("Invalid KeepDuration header.")
     }
 }
 
